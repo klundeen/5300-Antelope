@@ -2,7 +2,7 @@
  *CPSC5300 Antelope
  *Milestone 1
  *Parse Tree Skeleton
- *Members: Stephan, Harsha Thulasi
+ *Members: Yinyang, Stephan, Harsha
  */
 
 
