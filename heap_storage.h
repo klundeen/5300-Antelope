@@ -27,8 +27,7 @@
             etc.
  *
  */
-class SlottedPage : public DbBlock
-{
+class SlottedPage : public DbBlock {
 public:
     SlottedPage(Dbt &block, BlockID block_id, bool is_new = false);
 
@@ -81,8 +80,7 @@ protected:
         for buffer management and file management.
         Uses SlottedPage for storing records within blocks.
  */
-class HeapFile : public DbFile
-{
+class HeapFile : public DbFile {
 public:
     HeapFile(std::string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
 
@@ -127,15 +125,9 @@ protected:
  * @class HeapTable - Heap storage engine (implementation of DbRelation)
  */
 
-class HeapTable : public DbRelation
-{
+class HeapTable : public DbRelation {
 public:
-    HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes)
-    {
-        this.table_name = table_name;
-        this.column_names = column_names;
-        this.column_attributes = column_attributes;
-    }
+    HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes);
 
     virtual ~HeapTable() {}
 
@@ -147,93 +139,34 @@ public:
 
     HeapTable &operator=(HeapTable &&temp) = delete;
 
-    virtual void create() {
-        this.file.create();
-    }
+    virtual void create();
 
-    virtual void create_if_not_exists() {
-        if (this.file.closed) {
-            this.file.db_open();
-        }
-    }
+    virtual void create_if_not_exists();
 
-    virtual void drop() {
-        this.file.drop();
-    }
+    virtual void drop();
 
-    virtual void open() {
-        this.file.open();
-    }
+    virtual void open();
 
-    virtual void close() {
-        this.file.close();
-    }
+    virtual void close();
 
-    virtual Handle insert(const ValueDict *row) {
-        this.open();
-        return this.append(this.validate(row));
-    }
+    virtual Handle insert(const ValueDict *row);
 
-    virtual void update(const Handle handle, const ValueDict *new_values)
+    virtual void update(const Handle handle, const ValueDict *new_values);
 
-    // typedef std::pair<BlockID, RecordID> Handle;
-    virtual void del(const Handle handle) {
-        this.open();
-        SlottedPage* page = this.file.get(handle.first);
-        page.del(handle.second);
-        this.file.put(page);
-    }
+    virtual void del(const Handle handle);
 
-    virtual Handles *select() {
-        Handles* output;
-        this.open();
-        BlockIDs* blockIDs = this.file.block_ids();
-        for (auto it = begin (blockIDs); it != end (blockIDs); ++it) {
-            SlottedPage* page = this.file.get(it.first);
-            RecordIDs* recordIDs = page.ids();
-            for (auto recID = begin (recordIDs); recID != end (recordIDs); ++recID) {
-                output.push_back(Handle(it, recID));
-            }
-        }
-        return output;
-    }
+    virtual Handles *select();
 
-    virtual Handles *select(const ValueDict *where) {
-        Handles* output;
-        this.open();
-        BlockIDs* blockIDs = this.file.block_ids();
-        for (auto it = begin (blockIDs); it != end (blockIDs); ++it) {
-            SlottedPage* page = this.file.get(it.first);
-            RecordIDs* recordIDs = page.ids();
-            for (auto recID = begin (recordIDs); recID != end (recordIDs); ++recID) {
-                output.push_back(Handle(it, recID));
-            }
-        }
-        return output;
-    }
+    virtual Handles *select(const ValueDict *where);
 
-    virtual ValueDict *project(Handle handle) {
-        ValueDict* output;
-
-    }
+    virtual ValueDict *project(Handle handle);
 
     virtual ValueDict *project(Handle handle, const ColumnNames *column_names);
 
 protected:
     HeapFile file;
 
-    virtual ValueDict *validate(const ValueDict *row) {
-        ValueDict fullRow;
-        for(Identifier colAttr : this->column_attributes) {
-            this.column_attributes.
-            ValueDict::iterator found = row.find(col);
-            if (found == row.end()) {
-                throw DbRelationError("attribute not found in validate")   
-            } else {
-                fullRow[col] = found->second;
-            }
-        }
-    }
+    virtual ValueDict *validate(const ValueDict *row);
 
     virtual Handle append(const ValueDict *row);
 
