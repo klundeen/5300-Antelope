@@ -1,7 +1,7 @@
 #include "heap_storage.h"
 #include "storage_engine.h"
 #include "db_cxx.h"
-#include <stdlib>
+#include <stdlib.h>
 #include <stdio.h>
 #include <utility>
 #include <map>
