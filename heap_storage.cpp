@@ -57,15 +57,16 @@ bool test_heap_storage()
  * HeapFile
  */
 
-HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
 
-void HeapFile::db_open(unit flags)
+//HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
+
+void HeapFile::db_open(uint flags)
 {
   //closed: bool                                                                                             
   if(!this->closed)
     return;
 
-  this->db = db.DB();
+  this->db = db.Db();
   this->db.set_re_len(DbBlock::BLOCK_SZ);
   this->dbfilename = this->name + ".db";
   this->db.open(nullptr, this->dbfilename.c_str(),nullptr, DB_RECNO,flags,0644);
@@ -79,7 +80,7 @@ void HeapFile::db_open(unit flags)
     this->last = 0;
   }
 
-  this.closed = false;
+  this->closed = false;
 
 }
 
@@ -114,7 +115,7 @@ void HeapFile::drop(void)
  */
 void HeapFile::open(void)
 {
-  this->_db_open();
+  this->db_open();
 
   //overrides _init_parameter?
   this->block_size = this->stat.db["re_len"];
@@ -139,7 +140,7 @@ SlottedPage *HeapFile::get_new(void)
 {
   //allocate a new block
   char block[DbBlock::BLOCK_SZ]; //BLOCK_SZ = 4096
-  memeset(block, 0, sizeof(block));
+  memset(block, 0, sizeof(block));
   Dbt data(block, sizeof(block));
 
   int block_id = ++this->last;
@@ -158,10 +159,10 @@ SlottedPage *HeapFile::get_new(void)
  *@param given block_id 
  *@return a block
  */
-SlottedPage *HeapFile::get(BlockId block_id)
+SlottedPage *HeapFile::get(BlockID block_id)
 {
   //??need fix??                                                                                             
-  Dbt key(&block_id, size(block_id));
+  Dbt key(&block_id, sizeof(block_id));
   Dbt data;
   this->db.get(nullptr, &key, &data, 0);
 
