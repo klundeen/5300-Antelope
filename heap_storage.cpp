@@ -614,7 +614,9 @@ int SlottedPage::slide(u_int16_t start, u_int16_t end) {
 	}
 			
 	//sliding
-	block[(end_free+1+shift)::end] = block[(end_free+1)::start];
+	
+	memcpy(this->address(end_free+1+shift),this->address(end_free+1),((end_free+1)-start));
+	//block[(end_free+1+shift)::end] = block[(end_free+1)::start];
 	vector<RecordID> more_id = ids();
 	for(long unsigned int i = 0; i < more_id.size();i++){
 		u16 size = get_header(more_id[i])[0];
