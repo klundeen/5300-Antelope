@@ -85,19 +85,19 @@ public:
      * @throws           DbBlockNoRoomError if insufficient room in the block
      *                   (old record is retained)
      */
-    virtual void put(RecordID record_id, const Dbt &data) = 0;
+    virtual int put(RecordID record_id, const Dbt &data) = 0;
 
     /**
      * Delete a record from this block.
      * @param record_id  which record to delete
      */
-    virtual void del(RecordID record_id) = 0;
+    virtual int del(RecordID record_id) = 0;
 
     /**
      * Get all the record ids in this block (excluding deleted ones).
      * @returns  pointer to list of record ids (freed by caller)
      */
-    virtual RecordIDs *ids() = 0;
+    virtual RecordIDs ids() = 0;
 
     /**
      * Access the whole block's memory as a BerkeleyDB Dbt pointer.

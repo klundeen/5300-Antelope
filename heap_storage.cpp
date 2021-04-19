@@ -57,40 +57,36 @@ bool test_heap_storage()
  * HeapFile
  */
 
+HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
 
-//HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
-
-void HeapFile::db_open(uint flags)
+/**
+ *
+ *
+ *
+ */
+void HeapFile::_db_open(unit flags)
 {
-  //closed: bool                                                                                             
-  if(!this->closed)
+  //closed: bool
+  if (!this->closed)
     return;
 
-  this->db = db.Db();
-  this->db.set_re_len(DbBlock::BLOCK_SZ);
+  this->db = db.DB();
+  this->db.set_re_len(this->db.block_size);
   this->dbfilename = this->name + ".db";
-  this->db.open(nullptr, this->dbfilename.c_str(),nullptr, DB_RECNO,flags,0644);
-
-  if(flags == 0)
-    {
-      DB_BTREE_STAT stat;
-      this->db.stat(nullptr,&stat, DB_FAST_STAT);
-      this->last = stat.bt_ndata;
-    }else{
-    this->last = 0;
-  }
-
-  this->closed = false;
-
+  this->db.open(this->dbfilename, NULL, DB_RECNO, flags);
+  this->db.stat = this->db.stat(db.DB_FAST_STAT);
+  this->last = this->db.stat["ndata"];
+  this.closed = false;
 }
-
 
 /**
  *Create physical file
+ *
+ *
  */
 void HeapFile::create(void)
 {
-  this->db_open(DB_CREATE | DB_EXCL);
+  this->_db_open(DB_CREATE | DB_EXCL);
 
   DbBlock *block = this->get_new(); //first block of the file
 
@@ -99,6 +95,8 @@ void HeapFile::create(void)
 
 /**
  *Delete the physical file
+ *
+ *
  */
 void HeapFile::drop(void)
 {
@@ -112,10 +110,12 @@ void HeapFile::drop(void)
 
 /**
  *Open physical file
+ *
+ *
  */
 void HeapFile::open(void)
 {
-  this->db_open();
+  this->_db_open();
 
   //overrides _init_parameter?
   this->block_size = this->stat.db["re_len"];
@@ -123,6 +123,8 @@ void HeapFile::open(void)
 
 /**
  *Close the physical file
+ *
+ *
  */
 void HeapFile::close(void)
 {
@@ -140,7 +142,7 @@ SlottedPage *HeapFile::get_new(void)
 {
   //allocate a new block
   char block[DbBlock::BLOCK_SZ]; //BLOCK_SZ = 4096
-  memset(block, 0, sizeof(block));
+  memeset(block, 0, sizeof(block));
   Dbt data(block, sizeof(block));
 
   int block_id = ++this->last;
@@ -159,15 +161,10 @@ SlottedPage *HeapFile::get_new(void)
  *@param given block_id 
  *@return a block
  */
-SlottedPage *HeapFile::get(BlockID block_id)
+SlottedPage *HeapFile::get(BlockId block_id)
 {
-  //??need fix??                                                                                             
-  Dbt key(&block_id, sizeof(block_id));
-  Dbt data;
-  this->db.get(nullptr, &key, &data, 0);
-
-  return new SlottedPage(data, block_id, false);
-  
+  //??need fix??
+  return SlottedPage(this->db.get(block_id), block_id, false);
 }
 
 /**
@@ -487,4 +484,153 @@ bool testHeapTable_data()
   }
 
   return true;
+}
+//////SLOTTED PAGE
+typedef u_int16_t u16;
+
+//Constructor
+SlottedPage::SlottedPage(Dbt &block, BlockID block_id, bool is_new) : DbBlock(block, block_id, is_new) {
+    if (is_new) {
+        this->num_records = 0;
+        this->end_free = DbBlock::BLOCK_SZ - 1;
+        put_header();
+    } else {
+        this->num_records = get_header()[0]; 
+		this->end_free = get_header()[1];
+    }
+}
+// Add a new record to the block. Return its id.
+RecordID SlottedPage::add(const Dbt *data) {
+	if (!has_room(data->get_size()))
+        throw DbBlockNoRoomError("not enough room for new record");
+    u16 id = ++this->num_records;
+    u16 size = (u16) data->get_size();
+    this->end_free -= size;
+    u16 loc = this->end_free + 1;
+    put_header();
+    put_header(id, size, loc);
+    memcpy(this->address(loc), data->get_data(), size);
+    return id;
+}
+//Get a record from the block. Return null if it has been deleted.
+Dbt *SlottedPage::get(RecordID record_id) {
+	vector<Dbt> data;
+	u16 size = get_header(record_id)[0];
+	u16 loc = get_header(record_id)[1];
+	if (loc == 0)
+		return NULL;
+	
+	return memcpy(this->address(loc), data->get_data(), size);
+}
+//Replace the record with the given data. returns zero if doesn't fit
+int SlottedPage::put(RecordID record_id, const Dbt &data) {
+	u16 size = get_header(record_id)[0];
+	u16 loc = get_header(record_id)[1];
+	u16 new_size = (u16) data.get_size();
+		if (new_size > size){
+			u16 extra = new_size-size;
+			if(!has_room(extra)) {
+				return 0;
+			}
+			slide(loc+new_size, loc+size);
+			memcpy(this->address(loc), data.get_data(), new_size);
+		}
+		else{
+			memcpy(this->address(loc), data.get_data(), new_size);
+			slide(loc+new_size, loc+size);
+		}
+	size = get_header(record_id)[0];
+	loc = get_header(record_id)[1];
+	put_header(record_id,new_size,loc);
+	
+	return 1;
+}
+// Mark the given id as deleted by changing its size to zero and its location to 0.
+// Compact the rest of the data in the block. But keep the record ids the same for everyone.
+int SlottedPage::del(RecordID record_id) {
+	u16 size = get_header(record_id)[0];
+	u16 loc = get_header(record_id)[1];
+	put_header(record_id,0,0);
+	slide(loc,loc+size);
+	return 1;
+}
+//Sequence of all non-deleted record ids
+RecordIDs SlottedPage::ids(void) {
+	vector<RecordID> the_ids;
+		for(int i = 1; i < num_records+1; i++) {
+			if(get_header(i) != 0) {
+				the_ids.push_back(i);
+			}
+		}
+	return the_ids;
+}
+
+// Get 2-byte integer at given offset in block.
+u16 SlottedPage::get_n(u16 offset) {
+    return *(u16*)this->address(offset);
+}
+
+// Put a 2-byte integer at given offset in block.
+int SlottedPage::put_n(u16 offset, u16 n) {
+    *(u16*)this->address(offset) = n;
+	return 1;
+}
+
+// Make a void* pointer for a given offset into the data block.
+void* SlottedPage::address(u16 offset) {
+    return (void*)((char*)this->block.get_data() + offset);
+}
+
+// Store the size and offset for given id. For id of zero, store the block header.
+int SlottedPage::put_header(RecordID id, u16 size, u16 loc) {
+    if (id == 0) { // called the put_header() version and using the default params
+        size = this->num_records;
+        loc = this->end_free;
+    }
+    put_n(4*id, size);
+    put_n(4*id + 2, loc);
+	return 1;
+}
+//Calculate if we have room to store a record with given size. The size should include the 4 bytes for the header, too, if this is an add.
+bool SlottedPage::has_room(u_int16_t size) {
+		u16 avail = this->end_free - (num_records+1)*4;
+		return size <= avail;
+}
+/*
+		If start < end, then remove data from offset start up to but not including offset end by sliding data
+            that is to the left of start to the right. If start > end, then make room for extra data from end to start
+            by sliding data that is to the left of start to the left.
+            Also fix up any record headers whose data has slid. Assumes there is enough room if it is a left
+            shift (end < start).
+
+		
+*/
+int SlottedPage::slide(u_int16_t start, u_int16_t end) {
+	u16 shift = end -start;
+	if (shift == 0) {
+		return 0;
+	}
+			
+	//sliding
+	block[(end_free+1+shift)::end] = block[(end_free+1)::start];
+	vector<RecordID> more_id = ids();
+	for(long unsigned int i = 0; i < more_id.size();i++){
+		u16 size = get_header(more_id[i])[0];
+		u16 loc = get_header(more_id[i])[1];
+		if(loc <= start){ 
+			loc += shift;
+			put_header(more_id[i],size,loc);
+		}
+	}
+	this->end_free += shift;
+	put_header();
+	return 1;
+}
+// Get the size for id [0]
+// Get the size for offset [1]
+u16* SlottedPage::get_header(RecordID id) {
+	vector<u16> numbers;
+	numbers.push_back(this->get_n(4*id));
+	numbers.push_back(this->get_n(4*id+2));
+	return numbers.data();
 }
