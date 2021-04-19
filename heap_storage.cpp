@@ -59,34 +59,37 @@ bool test_heap_storage()
 
 HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
 
-/**
- *
- *
- *
- */
-void HeapFile::_db_open(unit flags)
+void HeapFile::db_open(unit flags)
 {
-  //closed: bool
-  if (!this->closed)
+  //closed: bool                                                                                             
+  if(!this->closed)
     return;
 
   this->db = db.DB();
-  this->db.set_re_len(this->db.block_size);
+  this->db.set_re_len(DbBlock::BLOCK_SZ);
   this->dbfilename = this->name + ".db";
-  this->db.open(this->dbfilename, NULL, DB_RECNO, flags);
-  this->db.stat = this->db.stat(db.DB_FAST_STAT);
-  this->last = this->db.stat["ndata"];
+  this->db.open(nullptr, this->dbfilename.c_str(),nullptr, DB_RECNO,flags,0644);
+
+  if(flags == 0)
+    {
+      DB_BTREE_STAT stat;
+      this->db.stat(nullptr,&stat, DB_FAST_STAT);
+      this->last = stat.bt_ndata;
+    }else{
+    this->last = 0;
+  }
+
   this.closed = false;
+
 }
+
 
 /**
  *Create physical file
- *
- *
  */
 void HeapFile::create(void)
 {
-  this->_db_open(DB_CREATE | DB_EXCL);
+  this->db_open(DB_CREATE | DB_EXCL);
 
   DbBlock *block = this->get_new(); //first block of the file
 
@@ -95,8 +98,6 @@ void HeapFile::create(void)
 
 /**
  *Delete the physical file
- *
- *
  */
 void HeapFile::drop(void)
 {
@@ -110,8 +111,6 @@ void HeapFile::drop(void)
 
 /**
  *Open physical file
- *
- *
  */
 void HeapFile::open(void)
 {
@@ -123,8 +122,6 @@ void HeapFile::open(void)
 
 /**
  *Close the physical file
- *
- *
  */
 void HeapFile::close(void)
 {
@@ -163,8 +160,13 @@ SlottedPage *HeapFile::get_new(void)
  */
 SlottedPage *HeapFile::get(BlockId block_id)
 {
-  //??need fix??
-  return SlottedPage(this->db.get(block_id), block_id, false);
+  //??need fix??                                                                                             
+  Dbt key(&block_id, size(block_id));
+  Dbt data;
+  this->db.get(nullptr, &key, &data, 0);
+
+  return new SlottedPage(data, block_id, false);
+  
 }
 
 /**
