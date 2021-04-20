@@ -396,7 +396,7 @@ void HeapTable::create_if_not_exists()
   {
     this->open();
   }
-  catch (DbRelationError const &)
+  catch (DbException const &)
   {
     this->create();
   }
@@ -420,6 +420,7 @@ void HeapTable::close()
 Handle HeapTable::insert(const ValueDict *row)
 {
   this->open();
+  cout << "about to call append() in insert()" << endl;
   return this->append(this->validate(row));
 }
 
@@ -450,10 +451,13 @@ Handles *HeapTable::select()
 
 ValueDict *HeapTable::validate(const ValueDict *row)
 {
-  ValueDict *full_row = new ValueDict();
+  ValueDict *validatedRow = new ValueDict();
   uint col_num = 0;
+  cout << " doing validate for row with len: " << row->size() << endl;
+
   for (Identifier colName : this->column_names)
   {
+    cout << "validate(): working on colName: " << colName << endl;
     ColumnAttribute colAttr = this->column_attributes[col_num++];
     ValueDict::const_iterator found = row->find(colName);
     Value value = found->second;
@@ -463,18 +467,23 @@ ValueDict *HeapTable::validate(const ValueDict *row)
     }
     else
     {
+      cout << "validate: about to get value for colName: " << colName << endl;
       value = row->at(colName);
-      full_row->at(colName) = value;
+      cout << "validate: value is: " << value.data_type << endl;
+      validatedRow->insert(pair<Identifier , Value>(colName, value));
     }
   }
-  return full_row;
+  return validatedRow;
 }
 
 Handle HeapTable::append(const ValueDict *row)
 {
+  cout << "about to marshall values for row" << endl;
   Dbt *data = this->marshal(row);
+  cout << "append(): about to get block from this.file.get_last_block_id()" << endl;
   SlottedPage *block = this->file.get(this->file.get_last_block_id());
   u_int16_t record_id;
+  cout << "append(): retrieved block from this.file.get_last_block_id()" << endl;
   try
   {
     record_id = block->add(data);
@@ -484,9 +493,12 @@ Handle HeapTable::append(const ValueDict *row)
     block = this->file.get_new();
     record_id = block->add(data);
   }
+
+  cout << "append(): about to put block in this.file" << endl;
   this->file.put(block);
   unsigned int id = this->file.get_last_block_id();
-  Handle output = Handle(id, record_id);
+  cout << "append(): returning output" << endl;
+  Handle output(id, record_id);
   return output;
 }
 
@@ -497,27 +509,35 @@ Dbt *HeapTable::marshal(const ValueDict *row)
   uint col_num = 0;
   for (auto const &column_name : this->column_names)
   {
+    cout << "marshal(): working on colName: " << column_name << endl;
+    cout << "marshal(): this->col_attr len: " << this->column_attributes.size() << endl;
     ColumnAttribute ca = this->column_attributes[col_num++];
+    cout << "mashal(): retreieved ca" << endl;
     ValueDict::const_iterator column = row->find(column_name);
+    cout << "mashal(): retreieved column from row: " << column->first << endl;
     Value value = column->second;
+    cout << "marshal():    col data type: " << ca.get_data_type() << endl;
     if (ca.get_data_type() == ColumnAttribute::DataType::INT)
     {
       *(int32_t *)(bytes + offset) = value.n;
       offset += sizeof(int32_t);
+      cout << "marshal():     done with column int offset" << endl;
     }
     else if (ca.get_data_type() == ColumnAttribute::DataType::TEXT)
     {
       uint size = value.s.length();
-      *(u16 *)(bytes + offset) = size;
-      offset += sizeof(u16);
-      memcpy(bytes + offset, value.s.c_str(), size);
+      *(u_int16_t *)(bytes + offset) = size;
+      offset += sizeof(u_int16_t);
+      memcpy(bytes + offset, value.s.c_str(), size); // assume ascii for now
       offset += size;
+      cout << "marshal():     done with column text offset" << endl;
     }
     else
     {
       throw DbRelationError("Only know how to marshal INT and TEXT");
     }
   }
+  cout << "marshal(): done with column/row attr match moving to creating data" << endl;
   char *right_size_bytes = new char[offset];
   memcpy(right_size_bytes, bytes, offset);
   delete[] bytes;
@@ -623,14 +643,27 @@ bool testHeapTable_CreaetDrop()
   return true;
 }
 
-int main()
-{
-  bool out = testHeapTable_CreaetDrop();
-  cout << "testHeapTable_CreaetDrop(): " << out << endl;
-}
+// int main()
+// {
+//   bool out = testHeapTable_CreaetDrop();
+//   cout << "testHeapTable_CreaetDrop(): " << out << endl;
+// }
 
 bool test_heap_storage()
 {
+  string fileName = "_test_create_drop.db";
+  remove("_test_create_drop.db");
+  // {
+  //   perror("Error deleting file _test_create_drop.db");
+  //   return false;
+  // }
+  remove("_test_data.db");
+  // {
+  //   perror("Error deleting file _test_data.db");
+  //   return false;
+  // }
+
+  cout << "done with file cleanup ahead" << endl;
   ColumnNames column_names;
   column_names.push_back("a");
   column_names.push_back("b");
@@ -639,12 +672,14 @@ bool test_heap_storage()
   column_attributes.push_back(ca);
   ca.set_data_type(ColumnAttribute::TEXT);
   column_attributes.push_back(ca);
-  HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
+  HeapTable table1("_test_create_drop.db", column_names, column_attributes);
   table1.create();
   cout << "create ok" << endl;
   table1.drop(); // drop makes the object unusable because of BerkeleyDB restriction -- maybe want to fix this some day
   cout << "drop ok" << endl;
-  HeapTable table("_test_data_cpp", column_names, column_attributes);
+
+  cout << "about to test db data" << endl;
+  HeapTable table("_test_data.db", column_names, column_attributes);
   table.create_if_not_exists();
   cout << "create_if_not_exsts ok" << endl;
   ValueDict row;
@@ -658,11 +693,16 @@ bool test_heap_storage()
   ValueDict *result = table.project((*handles)[0]);
   cout << "project ok" << endl;
   Value value = (*result)["a"];
-  if (value.n != 12)
+  if (value.n != 12) {
+
+    cout << "value.s is not '12', found is: " << value.s<< endl;
     return false;
+  }
   value = (*result)["b"];
-  if (value.s != "Hello!")
+  if (value.s != "Hello!") {
+    cout << "value.s is not 'Hello!', found is: " << value.s<< endl;
     return false;
+  }
 
   table.drop();
 
