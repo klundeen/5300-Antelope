@@ -18,8 +18,6 @@ using namespace std;
  * HeapFile
  */
 
-//HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
-
 /*
  *Updated with Kevin's code
  */
@@ -28,7 +26,6 @@ void HeapFile::db_open(uint flags)
   if (!this->closed)
     return;
 
-  //this->db = db.Db();
   this->db.set_re_len(DbBlock::BLOCK_SZ);
   this->dbfilename = this->name + ".db";
   this->db.open(nullptr, this->dbfilename.c_str(), nullptr, DB_RECNO, flags, 0644);
@@ -81,13 +78,10 @@ void HeapFile::open(void)
 {
   this->db_open();
 
-  //overrides _init_parameter?
-  //this->block_size = this->stat.db["re_len"];
 }
 
 /**
  *Close the physical file
- *
  *
  */
 void HeapFile::close(void)
@@ -128,7 +122,6 @@ SlottedPage *HeapFile::get_new(void)
  */
 SlottedPage *HeapFile::get(BlockID block_id)
 {
-  //??need fix??
   Dbt key(&block_id, sizeof(block_id));
   Dbt data;
   this->db.get(nullptr, &key, &data, 0);
@@ -143,7 +136,7 @@ SlottedPage *HeapFile::get(BlockID block_id)
  */
 void HeapFile::put(DbBlock *block)
 {
-  //need fix?
+  
   int block_id = block->get_block_id();
   Dbt key(&block_id, sizeof(block_id));
 
