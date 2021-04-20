@@ -12,45 +12,7 @@
 
 using namespace std;
 
-bool test_heap_storage()
-{
-  ColumnNames column_names;
-  column_names.push_back("a");
-  column_names.push_back("b");
-  ColumnAttributes column_attributes;
-  ColumnAttribute ca(ColumnAttribute::INT);
-  column_attributes.push_back(ca);
-  ca.set_data_type(ColumnAttribute::TEXT);
-  column_attributes.push_back(ca);
-  HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
-  table1.create();
-  cout << "create ok" << endl;
-  table1.drop(); // drop makes the object unusable because of BerkeleyDB restriction -- maybe want to fix this some day
-  cout << "drop ok" << endl;
-  HeapTable table("_test_data_cpp", column_names, column_attributes);
-  table.create_if_not_exists();
-  cout << "create_if_not_exsts ok" << endl;
-  ValueDict row;
-  row["a"] = Value(12);
-  row["b"] = Value("Hello!");
-  cout << "try insert" << endl;
-  table.insert(&row);
-  cout << "insert ok" << endl;
-  Handles *handles = table.select();
-  cout << "select ok " << handles->size() << endl;
-  ValueDict *result = table.project((*handles)[0]);
-  cout << "project ok" << endl;
-  Value value = (*result)["a"];
-  if (value.n != 12)
-    return false;
-  value = (*result)["b"];
-  if (value.s != "Hello!")
-    return false;
 
-  table.drop();
-
-  return true;
-}
 
 /* FIXME FIXME FIXME */
 
@@ -244,9 +206,10 @@ Dbt *SlottedPage::get(RecordID record_id)
 {
   u16 size = get_header(record_id)[0];
   u16 loc = get_header(record_id)[1];
+  u16 headerloc = size + loc;
   if (loc == 0)
     return nullptr; // this is just a tombstone, record has been deleted
-  return new Dbt(this->address(loc), size);
+   return (Dbt *)(this->block.get_data() + headerloc);
 }
 //Replace the record with the given data. returns zero if doesn't fit
 int SlottedPage::put(RecordID record_id, const Dbt &data)
@@ -355,17 +318,17 @@ int SlottedPage::slide(u_int16_t start, u_int16_t end)
 
   //sliding
 
-  memcpy(this->address(end_free + 1 + shift), this->address(end_free + 1), ((end_free + 1) - start));
+  memcpy(this->address(this->end_free + 1 + shift), memcpy(this->address(this->end_free + 1), NULL, start), end);
   //block[(end_free+1+shift)::end] = block[(end_free+1)::start];
-  vector<RecordID> more_id = ids();
-  for (long unsigned int i = 0; i < more_id.size(); i++)
+  
+  for (long unsigned int i = 0; i < this->num_records; i++)
   {
     u16 size = get_header(more_id[i])[0];
     u16 loc = get_header(more_id[i])[1];
     if (loc <= start)
     {
       loc += shift;
-      put_header(more_id[i], size, loc);
+      this->put_header(this->ids[i], size, loc);
     }
   }
   this->end_free += shift;
@@ -417,7 +380,7 @@ bool everythingCheckForSlotted()
 }
 
 /////////////////////////HEAP TABLE (DB_RELATION) /////////////////////////////
-HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names, column_attributes)
+HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names, column_attributes) , file(table_name)
 {
   this->table_name = table_name;
   this->column_names = column_names;
@@ -525,7 +488,7 @@ Handle HeapTable::append(const ValueDict *row)
   }
   this->file.put(block);
   unsigned int id = this->file.get_last_block_id();
-  Handle output = new Handle(id, record_id);
+  Handle output = Handle(id, record_id);
   return output;
 }
 
@@ -701,3 +664,42 @@ bool testHeapTable_data()
 
 
 */
+bool test_heap_storage()
+{
+  ColumnNames column_names;
+  column_names.push_back("a");
+  column_names.push_back("b");
+  ColumnAttributes column_attributes;
+  ColumnAttribute ca(ColumnAttribute::INT);
+  column_attributes.push_back(ca);
+  ca.set_data_type(ColumnAttribute::TEXT);
+  column_attributes.push_back(ca);
+  HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
+  table1.create();
+  cout << "create ok" << endl;
+  table1.drop(); // drop makes the object unusable because of BerkeleyDB restriction -- maybe want to fix this some day
+  cout << "drop ok" << endl;
+  HeapTable table("_test_data_cpp", column_names, column_attributes);
+  table.create_if_not_exists();
+  cout << "create_if_not_exsts ok" << endl;
+  ValueDict row;
+  row["a"] = Value(12);
+  row["b"] = Value("Hello!");
+  cout << "try insert" << endl;
+  table.insert(&row);
+  cout << "insert ok" << endl;
+  Handles *handles = table.select();
+  cout << "select ok " << handles->size() << endl;
+  ValueDict *result = table.project((*handles)[0]);
+  cout << "project ok" << endl;
+  Value value = (*result)["a"];
+  if (value.n != 12)
+    return false;
+  value = (*result)["b"];
+  if (value.s != "Hello!")
+    return false;
+
+  table.drop();
+
+  return true;
+}
