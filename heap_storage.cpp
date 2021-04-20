@@ -323,12 +323,12 @@ int SlottedPage::slide(u_int16_t start, u_int16_t end)
   
   for (long unsigned int i = 0; i < this->num_records; i++)
   {
-    u16 size = get_header(more_id[i])[0];
-    u16 loc = get_header(more_id[i])[1];
+    u16 size = get_header(this->ids().at(i))[0];
+    u16 loc = get_header(this->ids().at(i))[1];
     if (loc <= start)
     {
       loc += shift;
-      this->put_header(this->ids[i], size, loc);
+      this->put_header(this->ids().at(i), size, loc);
     }
   }
   this->end_free += shift;
