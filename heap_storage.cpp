@@ -417,7 +417,7 @@ bool everythingCheckForSlotted()
 }
 
 /////////////////////////HEAP TABLE (DB_RELATION) /////////////////////////////
-HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names, column_attributes)
+HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names, column_attributes), file(table_name)
 {
   this->table_name = table_name;
   this->column_names = column_names;
@@ -518,14 +518,14 @@ Handle HeapTable::append(const ValueDict *row)
   {
     record_id = block->add(data);
   }
-  catch (DbRelationError)
+  catch (runtime_error)
   {
     block = this->file.get_new();
     record_id = block->add(data);
   }
   this->file.put(block);
   unsigned int id = this->file.get_last_block_id();
-  Handle output = new Handle(id, record_id);
+  Handle output = Handle(id, record_id);
   return output;
 }
 
@@ -600,9 +600,31 @@ ValueDict *HeapTable::unmarshal(Dbt *data)
   return row;
 }
 
-/*
+ValueDict *HeapTable::project(Handle handle)
+{
+  ValueDict *out = new ValueDict();
+  return out;
+}
+
+ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names)
+{
+  ValueDict *out = new ValueDict();
+  return out;
+}
+
+Handles *HeapTable::select(const ValueDict *where)
+{
+  Handles *output = new Handles();
+}
+
+void HeapTable::update(const Handle handle, const ValueDict *new_values)
+{
+}
+
 bool testHeapTable_CreaetDrop()
 {
+
+  string fileName = "_test_create_drop.db";
   // remove file
   if (remove("_test_create_drop.db") != 0)
   {
@@ -610,16 +632,16 @@ bool testHeapTable_CreaetDrop()
     return false;
   }
 
-  ColumnNames colNames = new ColumnNames();
+  ColumnNames colNames;
   colNames.push_back("a");
   colNames.push_back("b");
-  ColumnAttributes colAttrs = new ColumnAttributes();
-  colAttrs.push_back(new ColumnAttribute(ColumnAttribute::DataType::INT));
-  colAttrs.push_back(new ColumnAttribute(ColumnAttribute::DataType::TEXT));
+  ColumnAttributes colAttrs;
+  colAttrs.push_back(ColumnAttribute(ColumnAttribute::DataType::INT));
+  colAttrs.push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
 
-  HeapTable table = new HeapTable("_test_create_drop.db", colNames, colAttrs);
+  HeapTable table("_test_create_drop.db", colNames, colAttrs);
   table.create();
-  if (FILE *file = fopen(name.c_str(), "r"))
+  if (FILE *file = fopen(fileName.c_str(), "r"))
   {
     fclose(file);
   }
@@ -630,7 +652,7 @@ bool testHeapTable_CreaetDrop()
   }
 
   table.drop();
-  if (FILE *file = fopen(name.c_str(), "r"))
+  if (FILE *file = fopen(fileName.c_str(), "r"))
   {
     fclose(file);
     perror("db file exists after drop() when it shouldn't");
@@ -640,8 +662,15 @@ bool testHeapTable_CreaetDrop()
   return true;
 }
 
+int main() {
+  bool out = testHeapTable_CreaetDrop();
+  cout << "testHeapTable_CreaetDrop(): " << out << endl;
+}
+
+/*
 bool testHeapTable_data()
 {
+  string fileName = "_test_create_drop.db";
   // remove file
   if (remove("_test_create_drop.db") != 0)
   {
@@ -649,15 +678,16 @@ bool testHeapTable_data()
     return false;
   }
 
-  ColumnNames colNames = new ColumnNames();
+  ColumnNames colNames;
   colNames.push_back("a");
   colNames.push_back("b");
-  ColumnAttributes colAttrs = new ColumnAttributes();
-  colAttrs.push_back(new ColumnAttribute(ColumnAttribute::DataType::INT));
-  colAttrs.push_back(new ColumnAttribute(ColumnAttribute::DataType::TEXT));
+  ColumnAttributes colAttrs;
+  colAttrs.push_back(ColumnAttribute(ColumnAttribute::DataType::INT));
+  colAttrs.push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
 
-  HeapTable table = new HeapTable("_test_create_drop.db", colNames, colAttrs);
-  table.create_if_not_exists() if (FILE *file = fopen(name.c_str(), "r"))
+  HeapTable table("_test_create_drop.db", colNames, colAttrs);
+  table.create_if_not_exists();
+  if (FILE *file = fopen(fileName.c_str(), "r"))
   {
     fclose(file);
   }
@@ -670,15 +700,15 @@ bool testHeapTable_data()
   table.close();
   table.open();
 
-  ValueDict row1 = new ValueDict();
+  ValueDict row1();
   row1["a"] = Value(12);
   row1["b"] = Value("Hello!");
 
-  ValueDict row2 = new ValueDict();
+  ValueDict row2();
   row2["a"] = Value(-192);
   row2["b"] = Value("Much longer piece of text here" * 100);
 
-  ValueDict row3 = new ValueDict();
+  ValueDict row3();
   row3["a"] = Value(1000);
   row3["b"] = Value("");
 
@@ -689,7 +719,7 @@ bool testHeapTable_data()
   Handles* output = table.select();
 
   table.drop();
-  if (FILE *file = fopen(name.c_str(), "r"))
+  if (FILE *file = fopen(fileName.c_str(), "r"))
   {
     fclose(file);
     perror("db file exists after drop() when it shouldn't");
@@ -698,6 +728,4 @@ bool testHeapTable_data()
 
   return true;
 }
-
-
 */
