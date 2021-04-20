@@ -18,3 +18,6 @@ HeapFile written by Yinying
 HeapTable written by Harsha
 
 ## Passing off to next group
+- While everything is implemented, we been having trouble running.
+- All the layers come with their unit tests
+- do not believe in void returns
