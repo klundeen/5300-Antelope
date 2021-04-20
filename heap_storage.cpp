@@ -50,7 +50,8 @@ bool test_heap_storage()
   table.drop();
 
   return true;
-}
+  }
+
 /* FIXME FIXME FIXME */
 
 /**
@@ -59,7 +60,9 @@ bool test_heap_storage()
 
 //HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {}
 
-
+/*
+ *Updated with Kevin's code
+ */
 void HeapFile::db_open(uint flags)
 {
   if(!this->closed)
@@ -84,8 +87,6 @@ void HeapFile::db_open(uint flags)
 
 /**
  *Create physical file
- *
- *
  */
 void HeapFile::create(void)
 {
@@ -98,7 +99,6 @@ void HeapFile::create(void)
 
 /**
  *Delete the physical file
- *
  *
  */
 void HeapFile::drop(void)
@@ -113,7 +113,6 @@ void HeapFile::drop(void)
 
 /**
  *Open physical file
- *
  *
  */
 void HeapFile::open(void)
@@ -163,6 +162,7 @@ SlottedPage *HeapFile::get_new(void)
  *Get a block from the database file
  *@param given block_id 
  *@return a block
+ *Updated with Kevin's code
  */
 SlottedPage *HeapFile::get(BlockID block_id)
 {
@@ -191,15 +191,13 @@ void HeapFile::put(DbBlock *block)
 /**
  *iterate through all the blocks ids in the file
  *
- *
  */
 BlockIDs *HeapFile::block_ids()
 {
-  //vector<BlockID>
+  
+  BlockIDs *blocks_ids = new BlockIDs();
 
-  vector<BlockID> *blocks_ids;
-
-  for (BlockID i = 1; i < (BlockID)this->last + 1; i++)
+  for (BlockID i = 1; i < this->last + 1; i++)
   {
     blocks_ids->push_back(i);
   }
@@ -493,6 +491,10 @@ bool testHeapTable_data()
 
   return true;
 }
+
+
+
+
 //////SLOTTED PAGE
 typedef u_int16_t u16;
 
