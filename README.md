@@ -19,5 +19,6 @@ HeapTable written by Harsha
 
 ## Passing off to next group
 - While everything is implemented, we been having trouble running.
+- fails the first run and half of the second time
 - All the layers come with their unit tests
 - do not believe in void returns
