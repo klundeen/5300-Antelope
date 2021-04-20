@@ -646,3 +646,33 @@ u16* SlottedPage::get_header(RecordID id) {
 	numbers.push_back(this->get_n(4*id+2));
 	return numbers.data();
 }
+//SlottedPage Unit Test
+
+bool everythingCheckForSlotted() {
+	char* p = (char*)malloc(400);
+	Dbt * block = new Dbt(p,2);
+	Dbt pageblock =	Dbt(p,1);
+	SlottedPage page(pageblock,(BlockID)0,true);
+	if(page.add(block) > 0) {
+		printf("Executed SlottedPage Add Funtion");
+	}
+	if(page.ids().size() > 0){
+		printf("Executed SlottedPage ids function");
+	}
+	block = page.get(1);
+	printf("Executed SlottedPage get function");
+	free(p);
+	p = (char*) malloc(1000);
+	block = new Dbt(p,416);
+	if(page.put(1,block[0]) > 0){
+		printf("Executed SlottedPage put function");
+	}
+	if(page.del(1) > 0){
+		printf("Executed SlottedPage del function");
+	}
+	
+	free(p);
+	
+	
+	return true;
+}
