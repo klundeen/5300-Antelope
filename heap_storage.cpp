@@ -413,7 +413,6 @@ void HeapTable::close()
 Handle HeapTable::insert(const ValueDict *row)
 {
   this->open();
-  cout << "about to call append() in insert()" << endl;
   return this->append(this->validate(row));
 }
 
@@ -446,11 +445,9 @@ ValueDict *HeapTable::validate(const ValueDict *row)
 {
   ValueDict *validatedRow = new ValueDict();
   uint col_num = 0;
-  cout << " doing validate for row with len: " << row->size() << endl;
 
   for (Identifier colName : this->column_names)
   {
-    cout << "validate(): working on colName: " << colName << endl;
     ColumnAttribute colAttr = this->column_attributes[col_num++];
     ValueDict::const_iterator found = row->find(colName);
     Value value = found->second;
@@ -460,10 +457,8 @@ ValueDict *HeapTable::validate(const ValueDict *row)
     }
     else
     {
-      cout << "validate: about to get value for colName: " << colName << endl;
       value = row->at(colName);
-      cout << "validate: value is: " << value.data_type << endl;
-      validatedRow->insert(pair<Identifier , Value>(colName, value));
+      validatedRow->insert(pair<Identifier, Value>(colName, value));
     }
   }
   return validatedRow;
@@ -471,50 +466,39 @@ ValueDict *HeapTable::validate(const ValueDict *row)
 
 Handle HeapTable::append(const ValueDict *row)
 {
-  cout << "about to marshall values for row" << endl;
-  Dbt *data = this->marshal(row);
-  cout << "append(): about to get block from this.file.get_last_block_id()" << endl;
-  SlottedPage *block = this->file.get(this->file.get_last_block_id());
-  u_int16_t record_id;
-  cout << "append(): retrieved block from this.file.get_last_block_id()" << endl;
+  Dbt *data = marshal(row);
+  DbBlock *block = this->file.get(this->file.get_last_block_id());
+  RecordID recordId;
   try
   {
-    record_id = block->add(data);
+    recordId = block->add(data);
   }
-  catch (runtime_error)
+  catch (const DbRelationError &)
   {
     block = this->file.get_new();
-    record_id = block->add(data);
+    recordId = block->add(data);
   }
-
-  cout << "append(): about to put block in this.file" << endl;
   this->file.put(block);
-  unsigned int id = this->file.get_last_block_id();
-  cout << "append(): returning output" << endl;
-  Handle output(id, record_id);
-  return output;
+  Handle toAppend;
+  toAppend.first = block->get_block_id();
+  toAppend.second = recordId;
+  return toAppend;
 }
 
 Dbt *HeapTable::marshal(const ValueDict *row)
 {
-  char *bytes = new char[DbBlock::BLOCK_SZ]; // more than we need (we insist that one row fits into DbBlock::BLOCK_SZ)
+  char *bytes = new char[DbBlock::BLOCK_SZ];
   uint offset = 0;
   uint col_num = 0;
   for (auto const &column_name : this->column_names)
   {
-    cout << "marshal(): working on colName: " << column_name << endl;
-    cout << "marshal(): this->col_attr len: " << this->column_attributes.size() << endl;
     ColumnAttribute ca = this->column_attributes[col_num++];
-    cout << "mashal(): retreieved ca" << endl;
     ValueDict::const_iterator column = row->find(column_name);
-    cout << "mashal(): retreieved column from row: " << column->first << endl;
     Value value = column->second;
-    cout << "marshal():    col data type: " << ca.get_data_type() << endl;
     if (ca.get_data_type() == ColumnAttribute::DataType::INT)
     {
       *(int32_t *)(bytes + offset) = value.n;
       offset += sizeof(int32_t);
-      cout << "marshal():     done with column int offset" << endl;
     }
     else if (ca.get_data_type() == ColumnAttribute::DataType::TEXT)
     {
@@ -523,14 +507,12 @@ Dbt *HeapTable::marshal(const ValueDict *row)
       offset += sizeof(u_int16_t);
       memcpy(bytes + offset, value.s.c_str(), size); // assume ascii for now
       offset += size;
-      cout << "marshal():     done with column text offset" << endl;
     }
     else
     {
       throw DbRelationError("Only know how to marshal INT and TEXT");
     }
   }
-  cout << "marshal(): done with column/row attr match moving to creating data" << endl;
   char *right_size_bytes = new char[offset];
   memcpy(right_size_bytes, bytes, offset);
   delete[] bytes;
@@ -686,14 +668,16 @@ bool test_heap_storage()
   ValueDict *result = table.project((*handles)[0]);
   cout << "project ok" << endl;
   Value value = (*result)["a"];
-  if (value.n != 12) {
+  if (value.n != 12)
+  {
 
-    cout << "value.s is not '12', found is: " << value.s<< endl;
+    cout << "value.s is not '12', found is: " << value.s << endl;
     return false;
   }
   value = (*result)["b"];
-  if (value.s != "Hello!") {
-    cout << "value.s is not 'Hello!', found is: " << value.s<< endl;
+  if (value.s != "Hello!")
+  {
+    cout << "value.s is not 'Hello!', found is: " << value.s << endl;
     return false;
   }
 
