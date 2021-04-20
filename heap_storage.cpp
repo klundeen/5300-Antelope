@@ -522,15 +522,11 @@ RecordID SlottedPage::add(const Dbt *data) {
 }
 //Get a record from the block. Return null if it has been deleted.
 Dbt *SlottedPage::get(RecordID record_id) {
-	Dbt* data;
-	u16 size = get_header(record_id)[0];
+    u16 size = get_header(record_id)[0];
 	u16 loc = get_header(record_id)[1];
-	if (loc == 0)
-		return NULL;
-	
-	memcpy(data->get_data(), this->address(loc), size);
-	
-	return data;
+    if (loc == 0)
+        return nullptr;  // this is just a tombstone, record has been deleted
+    return new Dbt(this->address(loc), size);
 }
 //Replace the record with the given data. returns zero if doesn't fit
 int SlottedPage::put(RecordID record_id, const Dbt &data) {
