@@ -10,9 +10,6 @@
 #include "SQLParser.h"
 #include "schema_tables.h"
 
-#ifndef INC_5300_ANTELOPE_MAIN_SQLEXEC_H
-#define INC_5300_ANTELOPE_MAIN_SQLEXEC_H
-
 /**
  * @class SQLExecError - exception for SQLExec methods
  */
@@ -71,7 +68,7 @@ protected:
     // the one place in the system that holds the _tables table
     static Tables *tables;
 
-    // recursive decent into the AST
+    // recursive decent into the AST    
     static QueryResult *create(const hsql::CreateStatement *statement);
 
     static QueryResult *drop(const hsql::DropStatement *statement);
@@ -81,6 +78,7 @@ protected:
     static QueryResult *show_tables();
 
     static QueryResult *show_columns(const hsql::ShowStatement *statement);
+    
 
     /**
      * Pull out column name and attributes from AST's column definition clause
@@ -92,6 +90,3 @@ protected:
     column_definition(const hsql::ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute);
 };
 
-
-
-#endif //INC_5300_ANTELOPE_MAIN_SQLEXEC_H

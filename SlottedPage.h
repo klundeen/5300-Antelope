@@ -11,14 +11,12 @@
 
 #include "storage_engine.h"
 
-#ifndef INC_5300_ANTELOPE_MAIN_SLOTTEDPAGE_H
-#define INC_5300_ANTELOPE_MAIN_SLOTTEDPAGE_H
-
 /**
  * @class SlottedPage - heap file implementation of DbBlock.
  *
  *      Manage a database block that contains several records.
         Modeled after slotted-page from Database Systems Concepts, 6ed, Figure 10-9.
+
         Record id are handed out sequentially starting with 1 as records are added with add().
         Each record has a header which is a fixed offset from the beginning of the block:
             Bytes 0x00 - Ox01: number of records
@@ -68,6 +66,3 @@ protected:
 
 bool assertion_failure(std::string message, double x = -1, double y = -1);
 bool test_slotted_page();
-
-
-#endif //INC_5300_ANTELOPE_MAIN_SLOTTEDPAGE_H

@@ -25,4 +25,3 @@ ValueDict *DbRelation::project(Handle handle, const ValueDict *where) {
     return this->project(handle, &t);
 }
 
-

@@ -10,8 +10,6 @@
 #include "db_cxx.h"
 #include "SlottedPage.h"
 
-#ifndef INC_5300_ANTELOPE_MAIN_HEAPFILE_H
-#define INC_5300_ANTELOPE_MAIN_HEAPFILE_H
 
 /**
  * @class HeapFile - heap file implementation of DbFile
@@ -68,4 +66,3 @@ protected:
     virtual uint32_t get_block_count();
 };
 
-#endif //INC_5300_ANTELOPE_MAIN_HEAPFILE_H

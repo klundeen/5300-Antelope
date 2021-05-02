@@ -11,9 +11,6 @@
 #include "SlottedPage.h"
 #include "HeapFile.h"
 
-#ifndef INC_5300_ANTELOPE_MAIN_HEAPTABLE_H
-#define INC_5300_ANTELOPE_MAIN_HEAPTABLE_H
-
 /**
  * @class HeapTable - Heap storage engine (implementation of DbRelation)
  */
@@ -74,4 +71,3 @@ protected:
 
 bool test_heap_storage();
 
-#endif //INC_5300_ANTELOPE_MAIN_HEAPTABLE_H

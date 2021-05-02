@@ -29,9 +29,9 @@ typedef std::vector<RecordID> RecordIDs;
 typedef std::length_error DbBlockNoRoomError;
 
 /**
- * @class DbBlock - abstract base class for blocks in our database files
+ * @class DbBlock - abstract base class for blocks in our database files 
  * (DbBlock's belong to DbFile's.)
- *
+ * 
  * Methods for putting/getting records in blocks:
  * 	add(data)
  * 	get(record_id)
@@ -253,15 +253,15 @@ public:
 
 /**
  * @class DbRelation - top-level object handling a physical database relation
- *
+ * 
  * Methods:
  * 	create()
  * 	create_if_not_exists()
  * 	drop()
- *
+ * 	
  * 	open()
  * 	close()
- *
+ * 	
  *	insert(row)
  *	update(handle, new_values)
  *	del(handle)
@@ -374,3 +374,4 @@ protected:
     ColumnNames column_names;
     ColumnAttributes column_attributes;
 };
+

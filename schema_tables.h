@@ -9,9 +9,6 @@
 
 #include "heap_storage.h"
 
-#ifndef INC_5300_ANTELOPE_MAIN_SCHEMA_TABLES_H
-#define INC_5300_ANTELOPE_MAIN_SCHEMA_TABLES_H
-
 /**
  * Initialize access to the schema tables.
  * Must be called before anything else is done with any of the schema
@@ -105,4 +102,3 @@ protected:
     static ColumnAttributes &COLUMN_ATTRIBUTES();
 };
 
-#endif //INC_5300_ANTELOPE_MAIN_SCHEMA_TABLES_H

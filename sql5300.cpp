@@ -87,4 +87,3 @@ void initialize_environment(char *envHome) {
     _DB_ENV = env;
     initialize_schema_tables();
 }
-

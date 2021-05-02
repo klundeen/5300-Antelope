@@ -1,59 +1,29 @@
-# 5300-Antelope
+# 5300-Instructor
+Instructor's DB Relation Manager project for CPSC5300/4300 at Seattle U, Spring 2021
 
-#####Sprint Otono Team: 
-    Jara Lindsay, Bryn Lasher, and Lili Hao
+Usage (argument is database directory):
+<pre>
+$ ./sql5300 ~/cpsc5300/data
+</pre>
 
-#####Sprint Verano Team: 
-    Stephan, Yinying, and Harsha Thulasi
+## Tags
+- <code>Milestone1</code> is playing around with the AST returned by the HyLine parser and general setup of the command loop.
+- <code>Milestone2h</code> has the intructor-provided files for Milestone2. (Note that heap_storage.cpp is just a stub.)
+- <code>Milestone2</code> is the instructor's attempt to complete the Milestone 2 assignment.
+- <code>Milestone3_prep</code> has the instructor-provided files for Milestone 3. The students' work is in <code>SQLExec.cpp</code> labeled with <code>FIXME</code>.
+## Unit Tests
+There are some tests for SlottedPage and HeapTable. They can be invoked from the <code>SQL</code> prompt:
+```sql
+SQL> test
+```
+Be aware that failed tests may leave garbage Berkeley DB files lingering in your data directory. If you don't care about any data in there, you are advised to just delete them all after a failed test.
+```sh
+$ rm -f data/*
+```
 
-##Tags
-#####Sprint Otono:
-
-    • Milestone3
- 
-    • Milestone4
- 
- 
-#####Sprint Verano: 
-
-    • Milestone_1 is a corrected tag from Milestone1 to include the name of Yinying
-
-    • Milestone2 is the milestone2 files
-
-## Milestone 3 & 4
-#####Milestone 3: 
-    Work in progress
-#####Milestone 4: 
-    Work in progress
-
-## Milestone 1 & 2
-#####Milestone 1: 
-    No Issues completing. 
-
-#####Milestone 2: 
-
-    DbBlock, DbFile, DbRelation are all inherited by the professor
-
-    SlottedPage written by Stephan
-
-    HeapFile written by Yinying
-
-    HeapTable written by Harsha
-
-## Passing off to next group
-
-#####Sprint Otono: 
-    Work in progress
-
-
-#####Sprint Verano: 
-
-    - While everything is implemented, we been having trouble running.
-    - fails the first run and half of the second time
-    - All the layers come with their unit tests
-    - do not believe in void returns
-
-## Pass off Video:
-
-#####Sprint Otono: 
-    Work in progress
+## Valgrind (Linux)
+To run valgrind (files must be compiled with <code>-ggdb</code>):
+```sh
+$ valgrind --leak-check=full --suppressions=valgrind.supp ./sql5300 data
+```
+Note that we've added suppression for the known issues with the Berkeley DB library <em>vis-à-vis</em> valgrind.

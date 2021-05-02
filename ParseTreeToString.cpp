@@ -286,3 +286,4 @@ string ParseTreeToString::statement(const SQLStatement *stmt) {
             return "Not implemented";
     }
 }
+

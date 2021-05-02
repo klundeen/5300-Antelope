@@ -9,9 +9,6 @@
 #include <vector>
 #include "SQLParser.h"
 
-#ifndef INC_5300_ANTELOPE_MAIN_PARSETREETOSTRING_H
-#define INC_5300_ANTELOPE_MAIN_PARSETREETOSTRING_H
-
 /**
  * @class ParseTreeToString - class for unparsing a Hyrise Abstract Syntax Tree
  */
@@ -53,6 +50,3 @@ private:
     static std::string show(const hsql::ShowStatement *stmt);
 };
 
-
-
-#endif //INC_5300_ANTELOPE_MAIN_PARSETREETOSTRING_H

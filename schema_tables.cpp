@@ -221,3 +221,4 @@ Handle Columns::insert(const ValueDict *row) {
 
     return HeapTable::insert(row);
 }
+
