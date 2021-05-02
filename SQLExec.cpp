@@ -1,7 +1,11 @@
 /**
+ * Team Antelope, Sprint Otono
+ *
  * @file SQLExec.cpp - implementation of SQLExec class
  * @author Kevin Lundeen
  * @author Lili Hao
+ * @author Jara Lindsay
+ * @author Bryn Lasher
  * @see "Seattle University, CPSC5300, Spring 2021"
  */
 #include "SQLExec.h"
@@ -9,10 +13,15 @@
 using namespace std;
 using namespace hsql;
 
-// define static data
+// Static tables data
 Tables *SQLExec::tables = nullptr;
 
-// make query result be printable
+/**
+ * Makes the query result printable
+ * @param out Ostream
+ * @param qres the QueryResult to print
+ * @return out Ostream
+ */
 ostream &operator<<(ostream &out, const QueryResult &qres) {
     if (qres.column_names != nullptr) {
         for (auto const &column_name: *qres.column_names)
@@ -43,30 +52,36 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
     return out;
 }
 
-//destructor
+/**
+ * Destructor
+ */
 QueryResult::~QueryResult() {
 
-	if (column_names != nullptr) {
-		delete column_names;
-	}
-	if (column_attributes != nullptr) {
-		delete column_attributes;
-	}
-	if (rows != nullptr) {
-		for (auto row : *rows) {
-			delete row;
-		}
-		delete rows;
-	}
+    if (column_names != nullptr) {
+        delete column_names;
+    }
+    if (column_attributes != nullptr) {
+        delete column_attributes;
+    }
+    if (rows != nullptr) {
+        for (auto row : *rows) {
+            delete row;
+        }
+        delete rows;
+    }
 }
 
-
+/**
+* Execute the given SQL statement.
+* @param statement   the Hyrise AST of the SQL statement to execute
+* @returns           the query result (freed by caller)
+*/
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
-    
+
     // FIXME: initialize _tables table, if not yet present
     if (SQLExec::tables == nullptr)
         SQLExec::tables = new Tables();
-    
+
     try {
         switch (statement->type()) {
             case kStmtCreate:
@@ -83,10 +98,16 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     }
 }
 
+/**
+* Pull out column name and attributes from AST's column definition clause.
+* @param col                AST column definition
+* @param column_name        returned by reference
+* @param column_attributes  returned by reference
+*/
 void
 SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
     column_name = string(col->name);
-    switch(col->type) {
+    switch (col->type) {
         case hsql::ColumnDefinition::INT: {
             column_attribute = ColumnAttribute(ColumnAttribute::INT);
             break;
@@ -102,42 +123,47 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 
 }
 
+/**
+ * Create a new table.
+ * @param statement     The table to create
+ * @return QueryResult  The result of the query
+ */
 QueryResult *SQLExec::create(const CreateStatement *statement) {
-    
+
     string ret;
     Identifier table_name = statement->tableName;
-    
+
     ValueDict where;
     where["table_name"] = table_name;
-    
+
     ColumnNames column_names;
     ColumnAttributes column_attributes;
-    
+
     Identifier cn;
     ColumnAttribute ca;
-    
+
     for (ColumnDefinition *col : *statement->columns) {
-        
+
         SQLExec::column_definition(col, cn, ca);
         column_names.push_back(cn);
         column_attributes.push_back(ca);
-        
+
     }
-    
+
     // add to schema Tables::TABLE_NAME if not exist
     Handles *t_handles = SQLExec::tables->select(&where);
-    
-    if  (t_handles->size() > 0) {
-        ret = "Error: ";
+
+    if (t_handles->size() > 0) {
+        ret = "Error: DbRelationError: ";
         ret += string(table_name);
-        ret += " already exist";
+        ret += " already exists";
         return new QueryResult(ret);
     }
-    
+
     ValueDict row;
     row["table_name"] = table_name;
     Handle t_handle = SQLExec::tables->insert(&row);
-    
+
     try {
 
         // add to schema Columns::TABLE_NAME
@@ -148,16 +174,16 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
             row["data_type"] = Value(column_attributes[i].get_data_type() == ColumnAttribute::INT ? "INT" : "TEXT");
             c_handles.push_back(columns.insert(&row));
         }
-        
+
         // create the table in Berkeley DB
         HeapTable table(statement->tableName, column_names, column_attributes);
-        
+
         try {
             table.create();
         } catch (DbException &e) {
             ret += "Error: ";
             ret += e.what();
-            
+
             //remove from _columes schema
             try {
                 for (auto const &handle: c_handles)
@@ -165,7 +191,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
             } catch (...) {}
             return new QueryResult(ret);
         }
-        
+
     } catch (exception &e) {
         try {
             // attempt to remove from _tables schema
@@ -173,30 +199,34 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         } catch (...) {}
         throw;
     }
-    
+
     ret += "created ";
     ret += statement->tableName;
     return new QueryResult(ret);
-    
+
 }
 
-// DROP ...
+/**
+ * Drop the specified table.
+ * @param statement     Table to drop
+ * @return QueryResult  The result of the drop query
+ */
 QueryResult *SQLExec::drop(const DropStatement *statement) {
-	// FIXME : drop table
+    // FIXME : drop table
     switch (statement->type) {
         case ShowStatement::kTables:
             break;
         default:
-            return new QueryResult("only drop table is supported"); 
+            return new QueryResult("only drop table is supported");
     }
-    
+
     Identifier table_name = statement->name;
-    
+
     // do not drop schema tables
     if (table_name == Tables::TABLE_NAME || table_name == Columns::TABLE_NAME) {
         return new QueryResult("cannot drop schema tables");
     }
-    
+
     string ret;
     ColumnNames column_names;
     ColumnAttributes column_attributes;
@@ -205,23 +235,23 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     // drop from _columns schema
     Handles *c_handles;
     where["table_name"] = table_name;
-    
-    DbRelation& columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
+
+    DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
     c_handles = columns.select(&where);
-    
+
     for (auto const &handle: *c_handles) {
         columns.del(handle);
     }
-    
+
     delete c_handles;
-    
+
     // drop from _tables schema
     // look up the handle for the dropping table
     // SELECT * FROM _tables WHERE table_name = <table_name>
 
     Handles *t_handles = SQLExec::tables->select(&where);
-    
-    if  (t_handles->size() == 0) {
+
+    if (t_handles->size() == 0) {
         ret = "Error: ";
         ret += string(table_name);
         ret += " does not exist";
@@ -233,10 +263,10 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
         SQLExec::tables->del(handle);
     }
     delete t_handles;
-    
+
     // drop the table from Berkeley DB
     HeapTable table(statement->name, column_names, column_attributes);
-    
+
     try {
         table.drop();
     } catch (DbException &e) {
@@ -250,8 +280,13 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     return new QueryResult(ret);
 }
 
+/**
+ * Show tables or columns.
+ * @param statement     Item to show
+ * @return QueryResult  The result of the show query
+ */
 QueryResult *SQLExec::show(const ShowStatement *statement) {
-	// FIXME show table
+    // FIXME show table
     switch (statement->type) {
         case ShowStatement::kTables:
             return show_tables();
@@ -260,10 +295,14 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
             return show_columns(statement);
             break;
         default:
-            return new QueryResult("not implemented"); 
+            return new QueryResult("not implemented");
     }
 }
 
+/**
+ * Show all current tables.
+ * @return QueryResult  The result of the show tables query
+ */
 QueryResult *SQLExec::show_tables() {
     // SELECT table_name FROM _tables WHERE table_name NOT IN ("_tables", "_columns");
 
@@ -281,12 +320,12 @@ QueryResult *SQLExec::show_tables() {
         row = SQLExec::tables->project(handle, column_names);
         Identifier table_name = (*row)["table_name"].s;
 
-        if (table_name != Tables::TABLE_NAME && table_name != Columns::TABLE_NAME ){
+        if (table_name != Tables::TABLE_NAME && table_name != Columns::TABLE_NAME) {
             rows->push_back(row);
         }
     }
     delete t_handles;
-    
+
     string ret("successfully returned ");
     ret += to_string(rows->size());
     ret += " rows";
@@ -294,20 +333,25 @@ QueryResult *SQLExec::show_tables() {
     return new QueryResult(column_names, column_attributes, rows, ret);
 }
 
+/**
+ * Shows all current columns.
+ * @param statement     The columns to show
+ * @return QueryResult  The result of the show columns query
+ */
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     // SELECT table_name, column_name, data_type FROM _columns WHERE table_name = <table_name>;
-    
+
     // given table name
     Identifier table_name = statement->tableName;
-    
+
     // query filter
     ValueDict where;
     where["table_name"] = table_name;
 
     // query _cloumes schema
-    DbRelation& columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
+    DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
     Handles *c_handles = columns.select(&where);
-    
+
     ColumnNames *column_names = new ColumnNames();
     column_names->push_back("table_name");
     column_names->push_back("column_name");
@@ -315,7 +359,7 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
 
     ColumnAttributes *column_attributes = new ColumnAttributes();
     column_attributes->push_back(ColumnAttribute(ColumnAttribute::TEXT));
-    
+
     ValueDicts *rows = new ValueDicts;
 
     for (auto const &handle: *c_handles) {
