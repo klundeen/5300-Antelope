@@ -85,11 +85,11 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     try {
         switch (statement->type()) {
             case kStmtCreate:
-                return create((const CreateStatement *) statement);
+                return create((const CreateStatement *) statement); //FIXME, part of mem leak
             case kStmtDrop:
-                return drop((const DropStatement *) statement);
+                return drop((const DropStatement *) statement); //FIXME, part of mem leak
             case kStmtShow:
-                return show((const ShowStatement *) statement);
+                return show((const ShowStatement *) statement); //FIXME, part of mem leak
             default:
                 return new QueryResult("not implemented");
         }
@@ -151,7 +151,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     }
 
     // add to schema Tables::TABLE_NAME if not exist
-    Handles *t_handles = SQLExec::tables->select(&where);
+    Handles *t_handles = SQLExec::tables->select(&where); //FIXME, part of mem leak
 
     if (t_handles->size() > 0) {
         throw DbRelationError(table_name + " already exists");
@@ -159,7 +159,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 
     ValueDict row;
     row["table_name"] = table_name;
-    Handle t_handle = SQLExec::tables->insert(&row);
+    Handle t_handle = SQLExec::tables->insert(&row); //FIXME, part of mem leak
 
     try {
 
@@ -169,7 +169,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         for (uint i = 0; i < column_names.size(); i++) {
             row["column_name"] = column_names[i];
             row["data_type"] = Value(column_attributes[i].get_data_type() == ColumnAttribute::INT ? "INT" : "TEXT");
-            c_handles.push_back(columns.insert(&row));
+            c_handles.push_back(columns.insert(&row)); //FIXME, part of mem leak
         }
 
         // create the table in Berkeley DB
@@ -234,7 +234,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     where["table_name"] = table_name;
 
     DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
-    c_handles = columns.select(&where);
+    c_handles = columns.select(&where); //FIXME, part of mem leak
 
     for (auto const &handle: *c_handles) {
         columns.del(handle);
@@ -246,14 +246,14 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     // look up the handle for the dropping table
     // SELECT * FROM _tables WHERE table_name = <table_name>
 
-    Handles *t_handles = SQLExec::tables->select(&where);
+    Handles *t_handles = SQLExec::tables->select(&where); //FIXME, part of mem leak
 
     if (t_handles->size() == 0) {
         throw DbRelationError(table_name + " does not exist");
     }
 
     for (auto const &handle: *t_handles) {
-        SQLExec::tables->del(handle);
+        SQLExec::tables->del(handle); //FIXME, part of mem leak
     }
     delete t_handles;
 
@@ -282,10 +282,10 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
     // FIXME show table
     switch (statement->type) {
         case ShowStatement::kTables:
-            return show_tables();
+            return show_tables(); //FIXME, part of mem leak
             break;
         case ShowStatement::kColumns:
-            return show_columns(statement);
+            return show_columns(statement); //FIXME, part of mem leak
             break;
         default:
             return new QueryResult("not implemented");
@@ -310,7 +310,7 @@ QueryResult *SQLExec::show_tables() {
     Handles *t_handles = SQLExec::tables->select();
 
     for (auto const &handle: *t_handles) {
-        row = SQLExec::tables->project(handle, column_names);
+        row = SQLExec::tables->project(handle, column_names); //FIXME, part of mem leak
         Identifier table_name = (*row)["table_name"].s;
 
         if (table_name != Tables::TABLE_NAME && table_name != Columns::TABLE_NAME) {
@@ -343,7 +343,7 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
 
     // query _cloumes schema
     DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
-    Handles *c_handles = columns.select(&where);
+    Handles *c_handles = columns.select(&where); //FIXME, part of mem leak
 
     ColumnNames *column_names = new ColumnNames();
     column_names->push_back("table_name");
