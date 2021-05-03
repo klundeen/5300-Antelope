@@ -154,10 +154,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     Handles *t_handles = SQLExec::tables->select(&where);
 
     if (t_handles->size() > 0) {
-        ret = "Error: DbRelationError: ";
-        ret += string(table_name);
-        ret += " already exists";
-        return new QueryResult(ret);
+        throw DbRelationError(table_name + " already exists");
     }
 
     ValueDict row;
@@ -252,11 +249,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     Handles *t_handles = SQLExec::tables->select(&where);
 
     if (t_handles->size() == 0) {
-        ret = "Error: ";
-        ret += string(table_name);
-        ret += " does not exist";
-        return new QueryResult(ret);
-
+        throw DbRelationError(table_name + " does not exist");
     }
 
     for (auto const &handle: *t_handles) {
