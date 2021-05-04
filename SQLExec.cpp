@@ -85,7 +85,7 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     try {
         switch (statement->type()) {
             case kStmtCreate:
-                return create((const CreateStatement *) statement); // FIXME Part of Mem leak
+                return create((const CreateStatement *) statement);
             case kStmtDrop:
                 return drop((const DropStatement *) statement);
             case kStmtShow:
@@ -131,7 +131,7 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 QueryResult *SQLExec::create(const CreateStatement *statement) {
     switch (statement->type) {
         case CreateStatement::kTable:
-            return create_table(statement); // FIXME Part of Mem leak
+            return create_table(statement);
         case CreateStatement::kIndex:
             return create_index(statement);
         default:
@@ -176,11 +176,13 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
     }
 
     // add to schema Tables::TABLE_NAME if not exist
-    Handles *t_handles = SQLExec::tables->select(&where); // FIXME Part of Mem leak
+    Handles *t_handles = SQLExec::tables->select(&where);
 
     if (t_handles->size() > 0) {
         throw DbRelationError(table_name + " already exists");
     }
+
+    delete t_handles;
 
     ValueDict row;
     row["table_name"] = table_name;
