@@ -366,17 +366,20 @@ QueryResult *SQLExec::show_tables() {
     column_attributes->push_back(ColumnAttribute(ColumnAttribute::TEXT));
 
     ValueDicts *rows = new ValueDicts;
-    ValueDict *row;
     Handles *t_handles = SQLExec::tables->select();
-
+    
     for (auto const &handle: *t_handles) {
-        row = SQLExec::tables->project(handle, column_names);
+        ValueDict *row = SQLExec::tables->project(handle, column_names);
         Identifier table_name = (*row)["table_name"].s;
 
         if (table_name != Tables::TABLE_NAME && table_name != Columns::TABLE_NAME) {
             rows->push_back(row);
+        } else {
+            delete row;
         }
+
     }
+    
     delete t_handles;
 
     string ret("successfully returned ");
