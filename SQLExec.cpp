@@ -85,11 +85,11 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     try {
         switch (statement->type()) {
             case kStmtCreate:
-                return create((const CreateStatement *) statement); //FIXME, part of mem leak
+                return create((const CreateStatement *) statement); // FIXME Part of Mem leak
             case kStmtDrop:
-                return drop((const DropStatement *) statement); //FIXME, part of mem leak
+                return drop((const DropStatement *) statement);
             case kStmtShow:
-                return show((const ShowStatement *) statement); //FIXME, part of mem leak
+                return show((const ShowStatement *) statement); // FIXME Part of Mem leak
             default:
                 return new QueryResult("not implemented");
         }
@@ -124,11 +124,36 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 }
 
 /**
+ *
+ * @param statement
+ * @return
+ */
+QueryResult *SQLExec::create(const CreateStatement *statement) {
+    switch (statement->type) {
+        case CreateStatement::kTable:
+            return create_table(statement); // FIXME Part of Mem leak
+        case CreateStatement::kIndex:
+            return create_index(statement);
+        default:
+            return new QueryResult("Only CREATE TABLE and CREATE INDEX are implemented");
+    }
+}
+
+/**
+ *
+ * @param statement
+ * @return
+ */
+QueryResult *SQLExec::create_index(const CreateStatement *statement) {
+    return new QueryResult("create index not implemented");  // FIXME
+}
+
+/**
  * Create a new table.
  * @param statement     The table to create
  * @return QueryResult  The result of the query
  */
-QueryResult *SQLExec::create(const CreateStatement *statement) {
+QueryResult *SQLExec::create_table(const CreateStatement *statement) {
 
     string ret;
     Identifier table_name = statement->tableName;
@@ -151,7 +176,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     }
 
     // add to schema Tables::TABLE_NAME if not exist
-    Handles *t_handles = SQLExec::tables->select(&where); //FIXME, part of mem leak
+    Handles *t_handles = SQLExec::tables->select(&where); // FIXME Part of Mem leak
 
     if (t_handles->size() > 0) {
         throw DbRelationError(table_name + " already exists");
@@ -159,7 +184,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 
     ValueDict row;
     row["table_name"] = table_name;
-    Handle t_handle = SQLExec::tables->insert(&row); //FIXME, part of mem leak
+    Handle t_handle = SQLExec::tables->insert(&row);
 
     try {
 
@@ -169,7 +194,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         for (uint i = 0; i < column_names.size(); i++) {
             row["column_name"] = column_names[i];
             row["data_type"] = Value(column_attributes[i].get_data_type() == ColumnAttribute::INT ? "INT" : "TEXT");
-            c_handles.push_back(columns.insert(&row)); //FIXME, part of mem leak
+            c_handles.push_back(columns.insert(&row));
         }
 
         // create the table in Berkeley DB
@@ -204,11 +229,36 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 }
 
 /**
+ *
+ * @param statement
+ * @return
+ */
+QueryResult *SQLExec::drop(const DropStatement *statement) {
+    switch (statement->type) {
+        case DropStatement::kTable:
+            return drop_table(statement);
+        case DropStatement::kIndex:
+            return drop_index(statement);
+        default:
+            return new QueryResult("Only DROP TABLE and CREATE INDEX are implemented");
+    }
+}
+
+/**
+ *
+ * @param statement
+ * @return
+ */
+QueryResult *SQLExec::drop_index(const DropStatement *statement) {
+    return new QueryResult("drop index not implemented");  // FIXME
+}
+
+/**
  * Drop the specified table.
  * @param statement     Table to drop
  * @return QueryResult  The result of the drop query
  */
-QueryResult *SQLExec::drop(const DropStatement *statement) {
+QueryResult *SQLExec::drop_table(const DropStatement *statement) {
     // FIXME : drop table
     switch (statement->type) {
         case ShowStatement::kTables:
@@ -234,7 +284,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     where["table_name"] = table_name;
 
     DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
-    c_handles = columns.select(&where); //FIXME, part of mem leak
+    c_handles = columns.select(&where);
 
     for (auto const &handle: *c_handles) {
         columns.del(handle);
@@ -246,14 +296,14 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     // look up the handle for the dropping table
     // SELECT * FROM _tables WHERE table_name = <table_name>
 
-    Handles *t_handles = SQLExec::tables->select(&where); //FIXME, part of mem leak
+    Handles *t_handles = SQLExec::tables->select(&where);
 
     if (t_handles->size() == 0) {
         throw DbRelationError(table_name + " does not exist");
     }
 
     for (auto const &handle: *t_handles) {
-        SQLExec::tables->del(handle); //FIXME, part of mem leak
+        SQLExec::tables->del(handle);
     }
     delete t_handles;
 
@@ -279,17 +329,25 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
  * @return QueryResult  The result of the show query
  */
 QueryResult *SQLExec::show(const ShowStatement *statement) {
-    // FIXME show table
     switch (statement->type) {
         case ShowStatement::kTables:
-            return show_tables(); //FIXME, part of mem leak
-            break;
+            return show_tables(); // FIXME Part of Mem leak
         case ShowStatement::kColumns:
-            return show_columns(statement); //FIXME, part of mem leak
-            break;
+            return show_columns(statement);
+        case ShowStatement::kIndex:
+            return show_index(statement);
         default:
-            return new QueryResult("not implemented");
+            throw SQLExecError("unrecognized SHOW type");
     }
+}
+
+/**
+ *
+ * @param statement
+ * @return
+ */
+QueryResult *SQLExec::show_index(const ShowStatement *statement) {
+    return new QueryResult("not implemented"); // FIXME
 }
 
 /**
@@ -310,7 +368,7 @@ QueryResult *SQLExec::show_tables() {
     Handles *t_handles = SQLExec::tables->select();
 
     for (auto const &handle: *t_handles) {
-        row = SQLExec::tables->project(handle, column_names); //FIXME, part of mem leak
+        row = SQLExec::tables->project(handle, column_names);
         Identifier table_name = (*row)["table_name"].s;
 
         if (table_name != Tables::TABLE_NAME && table_name != Columns::TABLE_NAME) {
@@ -343,7 +401,7 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
 
     // query _cloumes schema
     DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
-    Handles *c_handles = columns.select(&where); //FIXME, part of mem leak
+    Handles *c_handles = columns.select(&where);
 
     ColumnNames *column_names = new ColumnNames();
     column_names->push_back("table_name");
