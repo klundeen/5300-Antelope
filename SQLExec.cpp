@@ -197,34 +197,34 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
  * @return QueryResult  The result of the create index query
  */
 QueryResult *SQLExec::create_index(const CreateStatement *statement) {
-    
+
     // get the table name and index name from statement
     Identifier table_name = statement->tableName;
     Identifier index_name = statement->indexName;
     Identifier index_type = statement->indexType;
-    
+
     //ColumnNames column_names;
     //ColumnAttributes column_attributes;
     Identifier column_name;
     //ColumnAttribute column_attribute;
-    
+
     // Add to schema: _indices
-     ValueDict row;
-     row["table_name"] = table_name;
-     row["index_name"] = index_name;
-     row["index_type"] = index_type;
-    
+    ValueDict row;
+    row["table_name"] = table_name;
+    row["index_name"] = index_name;
+    row["index_type"] = index_type;
+
     if (index_type == "BTREE") {
         row["is_unique"] = Value(true);
-    }else{
+    } else {
         row["is_unique"] = Value(false);
     }
 
-     uint16_t idx = 0;
-     row["seq_in_index"] = Value(idx);
-    
+    uint16_t idx = 0;
+    row["seq_in_index"] = Value(idx);
+
     DbRelation &indices = SQLExec::tables->get_table(Indices::TABLE_NAME);
-    
+
     // check if the index on given table already created
     // DbIndex *index = SQLExec::indices->get_index(table_name, index_name);
     ValueDict where;
@@ -232,7 +232,7 @@ QueryResult *SQLExec::create_index(const CreateStatement *statement) {
     where["index_name"] = Value(index_name);
 
     Handles *handles = indices.select(&where);
-    
+
     // the number of returned matching rows
     u_long n = handles->size();
     if (n > 0) {
@@ -241,16 +241,16 @@ QueryResult *SQLExec::create_index(const CreateStatement *statement) {
         //delete &row;
         return new QueryResult("Error: DbRelationError: duplicate index " + table_name);
     }
-    
+
     //Handles i_handles;
     for (auto const *col : *statement->indexColumns) {
 
         row["column_name"] = Value(col);
-        
+
         // increase idx
         idx += 1;
         row["seq_in_index"] = Value(idx);
-        
+
         handles->push_back(indices.insert(&row));  // Insert into _indices
 
     }
@@ -322,12 +322,12 @@ QueryResult *SQLExec::drop_index(const DropStatement *statement) {
 
     if (table_name == Tables::TABLE_NAME || table_name == Columns::TABLE_NAME || table_name == Indices::TABLE_NAME)
         throw SQLExecError("cannot drop index for schema table");
-    
+
     // the query filter
     ValueDict where;
     where["table_name"] = Value(table_name);
     where["index_name"] = Value(index_name);
-    
+
     // remove from _indices schema
     DbRelation &indices = SQLExec::tables->get_table(Indices::TABLE_NAME);
     Handles *i_handles = indices.select(&where);
@@ -365,7 +365,7 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
 
     // get the table name from the statement
     Identifier table_name = statement->tableName;
-    
+
     // define the columns to be shown
     ColumnNames *column_names = new ColumnNames;
     column_names->push_back("table_name");
@@ -377,27 +377,27 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
 
     ColumnAttributes *column_attributes = new ColumnAttributes;
     column_attributes->push_back(ColumnAttribute(ColumnAttribute::TEXT));
-    
+
     DbRelation &indices = SQLExec::tables->get_table(Indices::TABLE_NAME);
 
     // define the search filter
     ValueDict where;
     where["table_name"] = Value(table_name);
     Handles *handles = indices.select(&where);
-    
+
     // the number of returned matching rows
     u_long n = handles->size();
-    
+
     // placeholder for matching rows
     ValueDicts *rows = new ValueDicts;
     for (auto const &handle: *handles) {
         ValueDict *row = indices.project(handle, column_names);
         rows->push_back(row);
     }
-    
+
     // free up the memories
     delete handles;
-    
+
     return new QueryResult(column_names, column_attributes, rows, "successfully returned " + to_string(n) + " rows");
 }
 
