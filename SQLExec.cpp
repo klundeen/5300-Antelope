@@ -363,10 +363,9 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
  */
 QueryResult *SQLExec::show_index(const ShowStatement *statement) {
 
-    // get the table name from the statement
+
     Identifier table_name = statement->tableName;
 
-    // define the columns to be shown
     ColumnNames *column_names = new ColumnNames;
     column_names->push_back("table_name");
     column_names->push_back("index_name");
@@ -380,25 +379,25 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
 
     DbRelation &indices = SQLExec::tables->get_table(Indices::TABLE_NAME);
 
-    // define the search filter
     ValueDict where;
     where["table_name"] = Value(table_name);
-    Handles *handles = indices.select(&where);
+    Handles *i_handles = indices.select(&where);
 
-    // the number of returned matching rows
-    u_long n = handles->size();
+    u_long n = i_handles->size();
 
-    // placeholder for matching rows
     ValueDicts *rows = new ValueDicts;
-    for (auto const &handle: *handles) {
+    for (auto const &handle: *i_handles) {
         ValueDict *row = indices.project(handle, column_names);
         rows->push_back(row);
     }
 
-    // free up the memories
-    delete handles;
+    delete i_handles;
 
-    return new QueryResult(column_names, column_attributes, rows, "successfully returned " + to_string(n) + " rows");
+    string ret("successfully returned ");
+    ret += to_string(n);
+    ret += " rows";
+
+    return new QueryResult(column_names, column_attributes, rows, ret);
 }
 
 /**
