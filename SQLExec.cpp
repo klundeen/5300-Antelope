@@ -1,6 +1,11 @@
 /**
+ * Team Antelope, Sprint Otono
+ *
  * @file SQLExec.cpp - implementation of SQLExec class
  * @author Kevin Lundeen
+ * @author Lili Hao
+ * @author Jara Lindsay
+ * @author Bryn Lasher
  * @see "Seattle University, CPSC5300, Spring 2021"
  */
 #include "SQLExec.h"
@@ -11,7 +16,12 @@ using namespace hsql;
 // define static data
 Tables *SQLExec::tables = nullptr;
 
-// make query result be printable
+/**
+ * Makes the query result printable
+ * @param out Ostream
+ * @param qres the QueryResult to print
+ * @return out Ostream
+ */
 ostream &operator<<(ostream &out, const QueryResult &qres) {
     if (qres.column_names != nullptr) {
         for (auto const &column_name: *qres.column_names)
@@ -45,6 +55,9 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
     return out;
 }
 
+/**
+ * Destructor
+ */
 QueryResult::~QueryResult() {
     if (column_names != nullptr)
         delete column_names;
@@ -57,7 +70,11 @@ QueryResult::~QueryResult() {
     }
 }
 
-
+/**
+* Execute the given SQL statement.
+* @param statement   the Hyrise AST of the SQL statement to execute
+* @returns           the query result (freed by caller)
+*/
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
     // initialize _tables table, if not yet present
     if (SQLExec::tables == nullptr)
@@ -79,6 +96,12 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     }
 }
 
+/**
+* Pull out column name and attributes from AST's column definition clause.
+* @param col                AST column definition
+* @param column_name        returned by reference
+* @param column_attributes  returned by reference
+*/
 void
 SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
     column_name = col->name;
@@ -95,6 +118,11 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
     }
 }
 
+/**
+ * Create a new table or index.
+ * @param statement     The table or index to create
+ * @return QueryResult  The result of the create query
+ */
 QueryResult *SQLExec::create(const CreateStatement *statement) {
     switch (statement->type) {
         case CreateStatement::kTable:
@@ -106,6 +134,11 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     }
 }
 
+/**
+ * Create a new table.
+ * @param statement     The table to create
+ * @return QueryResult  The result of the query
+ */
 QueryResult *SQLExec::create_table(const CreateStatement *statement) {
     Identifier table_name = statement->tableName;
     ColumnNames column_names;
@@ -158,6 +191,11 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
     return new QueryResult("created " + table_name);
 }
 
+/**
+ * Create a new index.
+ * @param statement     The statement with a table to create the index for
+ * @return QueryResult  The result of the create index query
+ */
 QueryResult *SQLExec::create_index(const CreateStatement *statement) {
     
     // get the table name and index name from statement
@@ -222,7 +260,11 @@ QueryResult *SQLExec::create_index(const CreateStatement *statement) {
 
 }
 
-// DROP ...
+/**
+ * Drop the specified table or index.
+ * @param statement     The table or index to drop
+ * @return QueryResult  The result of the drop query
+ */
 QueryResult *SQLExec::drop(const DropStatement *statement) {
     switch (statement->type) {
         case DropStatement::kTable:
@@ -234,6 +276,11 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     }
 }
 
+/**
+ * Drop the specified table.
+ * @param statement     Table to drop
+ * @return QueryResult  The result of the drop query
+ */
 QueryResult *SQLExec::drop_table(const DropStatement *statement) {
     Identifier table_name = statement->name;
     if (table_name == Tables::TABLE_NAME || table_name == Columns::TABLE_NAME)
@@ -263,6 +310,11 @@ QueryResult *SQLExec::drop_table(const DropStatement *statement) {
     return new QueryResult(string("dropped ") + table_name);
 }
 
+/**
+ *  Drop the index from the table.
+ * @param statement     Index to drop
+ * @return QueryResult  The result of the drop index query
+ */
 QueryResult *SQLExec::drop_index(const DropStatement *statement) {
 
     Identifier table_name = statement->name;
@@ -286,6 +338,11 @@ QueryResult *SQLExec::drop_index(const DropStatement *statement) {
     return new QueryResult(string("dropped index ") + index_name);
 }
 
+/**
+ * Show tables or columns.
+ * @param statement     Item to show
+ * @return QueryResult  The result of the show query
+ */
 QueryResult *SQLExec::show(const ShowStatement *statement) {
     switch (statement->type) {
         case ShowStatement::kTables:
@@ -299,6 +356,11 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
     }
 }
 
+/**
+ * Show the index from the table.
+ * @param statement     Index to show
+ * @return QueryResult  The result of the show index query
+ */
 QueryResult *SQLExec::show_index(const ShowStatement *statement) {
 
     // get the table name from the statement
@@ -339,6 +401,10 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
     return new QueryResult(column_names, column_attributes, rows, "successfully returned " + to_string(n) + " rows");
 }
 
+/**
+ * Show all current tables.
+ * @return QueryResult  The result of the show tables query
+ */
 QueryResult *SQLExec::show_tables() {
     ColumnNames *column_names = new ColumnNames;
     column_names->push_back("table_name");
@@ -362,6 +428,11 @@ QueryResult *SQLExec::show_tables() {
     return new QueryResult(column_names, column_attributes, rows, "successfully returned " + to_string(n) + " rows");
 }
 
+/**
+ * Shows all current columns.
+ * @param statement     The columns to show
+ * @return QueryResult  The result of the show columns query
+ */
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     DbRelation &columns = SQLExec::tables->get_table(Columns::TABLE_NAME);
 
