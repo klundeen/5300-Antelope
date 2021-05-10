@@ -1,33 +1,19 @@
-# 5300-Antelope
+# 5300-Instructor
+Instructor's DB Relation Manager project for CPSC5300/4300 at Seattle U, Spring 2021
 
-##Sprint Otono Team: 
+Usage (argument is database directory):
+<pre>
+$ ./sql5300 ~/cpsc5300/data
+</pre>
 
-```Jara Lindsay, Bryn Lasher, and Lili Hao```
-
-## Usage:
-Steps: 
-- Navigate to your cpsc5300 directory in cs1: <code>cd ~/cpsc5300</code>
-
-- Clone teh repo inside the cpsc5300 directory: <code> git clone https://github.com/klundeen/5300-Antelope.git </code> 
-
-- Navigate to the cloned repository: <code>cd 5300-Antelope</code>
-
-- To checkout tags: <code>git checkout tags/Milestone(1/2/3/4)</code>
-
-- Make the program: <code>make</code>
-
-- Clean the solution (if you need to): <code>make clean</code>
-
-- To run the program: <code>$ ./sql5300 ~/cpsc5300/data</code>
-
-- To exit the program:  <code>quit</code>
-
-## Tags:
-- Milestone1: SQL statement engine <code>git checkout tags/Milestone1</code>
-- Milestone2: Rudimentary Storage Engine <code>git checkout tags/Milestone2</code>
-- Milestone3: Schema Storage <code>git checkout tags/Milestone3</code>
-- Milestone4: Indexing <code>git checkout tags/Milestone4</code>
-## Unit Tests:
+## Tags
+- <code>Milestone1</code> is playing around with the AST returned by the HyLine parser and general setup of the command loop.
+- <code>Milestone2h</code> has the intructor-provided files for Milestone2. (Note that heap_storage.cpp is just a stub.)
+- <code>Milestone2</code> is the instructor's attempt to complete the Milestone 2 assignment.
+- <code>Milestone3_prep</code> has the instructor-provided files for Milestone 3. The students' work is in <code>SQLExec.cpp</code> labeled with <code>FIXME</code>.
+- <code>Milestone3</code> has the instructor's attempt to complete the Milestone 3 assignment.
+- <code>Milestone4_prep</code> has the instructor-provided files for Milestone4 (this was all actually in Milestone3, too, by mistake).
+## Unit Tests
 There are some tests for SlottedPage and HeapTable. They can be invoked from the <code>SQL</code> prompt:
 ```sql
 SQL> test
@@ -37,15 +23,9 @@ Be aware that failed tests may leave garbage Berkeley DB files lingering in your
 $ rm -f data/*
 ```
 
-## Valgrind (Linux):
+## Valgrind (Linux)
 To run valgrind (files must be compiled with <code>-ggdb</code>):
 ```sh
 $ valgrind --leak-check=full --suppressions=valgrind.supp ./sql5300 data
 ```
 Note that we've added suppression for the known issues with the Berkeley DB library <em>vis-à-vis</em> valgrind.
-
-## Handoff:
-- In Progress
- 
-## Video:
-- Link: 

@@ -66,4 +66,3 @@ protected:
 
 bool assertion_failure(std::string message, double x = -1, double y = -1);
 bool test_slotted_page();
-

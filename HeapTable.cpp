@@ -337,11 +337,11 @@ bool test_compare(DbRelation &table, Handle handle, int a, string b) {
     }
     value = (*result)["b"];
     if (value.s != b) {
-        delete result;
+		delete result;
         return false;
-    }
+	}
     value = (*result)["c"];
-    delete result;
+	delete result;
     if (value.n != (a % 2 == 0))
         return false;
     return true;

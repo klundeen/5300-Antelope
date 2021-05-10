@@ -249,6 +249,9 @@ string ParseTreeToString::drop(const DropStatement *stmt) {
         case DropStatement::kTable:
             ret += "TABLE ";
             break;
+        case ShowStatement::kIndex:
+            ret += string("INDEX ") + stmt->indexName + " FROM ";
+            break;
         default:
             ret += "? ";
     }
@@ -301,6 +304,4 @@ string ParseTreeToString::statement(const SQLStatement *stmt) {
             return "Not implemented";
     }
 }
-
-
 
