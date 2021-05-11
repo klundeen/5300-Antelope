@@ -52,7 +52,7 @@ Note that we've added suppression for the known issues with the Berkeley DB libr
 - Milestone 3 should be working correctly without memory issues. Use <code>git checkout tags/Milestone3</code> to checkout our Milestone 3 code. 
 - Milestone 4 should be working, but there are a few issues to look out for.
     1) We had 2 memory leak errors as of 5/10 12pm. We are working to get those resolved. 
-    2) We have a segmentation fault when trying to insert rows into indices in create_index. 
+    2) We have a segmentation fault in class DbIndex's create and drop methods  
 - For more information and a demo of Milestone 3/4 follow the video link below. 
 
 ## Video:
