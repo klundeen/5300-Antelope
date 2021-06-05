@@ -1,14 +1,14 @@
 # 5300-Antelope
 
-##Sprint Otono Team: 
+##Sprint Invierno Team: 
 
-```Jara Lindsay, Bryn Lasher, and Lili Hao```
+```Cheng Loong Kong and Nick Nguyen```
 
 ## Usage:
 Steps: 
 - Navigate to your cpsc5300 directory in cs1: <code>cd ~/cpsc5300</code>
 
-- Clone teh repo inside the cpsc5300 directory: <code> git clone https://github.com/klundeen/5300-Antelope.git </code> 
+- Clone the repo inside the cpsc5300 directory: <code> git clone https://github.com/klundeen/5300-Antelope.git </code> 
 
 - Navigate to the cloned repository: <code>cd 5300-Antelope</code>
 
@@ -27,15 +27,8 @@ Steps:
 - Milestone2: Rudimentary Storage Engine <code>git checkout tags/Milestone2</code>
 - Milestone3: Schema Storage <code>git checkout tags/Milestone3</code>
 - Milestone4: Indexing <code>git checkout tags/Milestone4</code>
-## Unit Tests:
-There are some tests for SlottedPage and HeapTable. They can be invoked from the <code>SQL</code> prompt:
-```sql
-SQL> test
-```
-Be aware that failed tests may leave garbage Berkeley DB files lingering in your data directory. If you don't care about any data in there, you are advised to just delete them all after a failed test.
-```sh
-$ rm -f data/*
-```
+- Milestone5: Insert, Delete, Simple Queries <code>git checkout tags/Milestone5</code>
+- Milestone6: BTree Index <code>git checkout tags/Milestone6</code>
 
 ## Valgrind (Linux):
 To run valgrind (files must be compiled with <code>-ggdb</code>):
@@ -53,7 +46,6 @@ Note that we've added suppression for the known issues with the Berkeley DB libr
 - Milestone 4 should be working, but there are a few issues to look out for.
     1) We had 2 memory leak errors as of 5/10 12pm. We are working to get those resolved. 
     2) We have a segmentation fault in class DbIndex's create and drop methods  
-- For more information and a demo of Milestone 3/4 follow the video link below. 
+- Milestone 5 should be working. If you get segmentation faults when dropping indices or inserting into tables then delete your database files and start again.
+- Milestone 6 should be working. Similar to milestone 5, if you get unwritable pages in the cache then delete your database files and start again.
 
-## Video:
-- Link: https://youtu.be/_1dBpxbN-5o
