@@ -32,8 +32,13 @@ void BTreeIndex::create() {
     root = new BTreeLeaf(file, stat->get_root_id(), key_profile, true);
     closed = false;
     Handles *table_rows = relation.select();
-    for (auto const &row: *table_rows)
-        insert(row);
+	try{
+		for (auto const &row: *table_rows)
+			insert(row);
+	} catch(...){
+		drop();
+		throw;
+	}
     delete table_rows;
 }
 
@@ -70,8 +75,24 @@ void BTreeIndex::close() {
 // Find all the rows whose columns are equal to key. Assumes key is a dictionary whose keys are the column
 // names in the index. Returns a list of row handles.
 Handles *BTreeIndex::lookup(ValueDict *key_dict) const {
-    // FIXME
-    return nullptr;
+    return this->_lookup(root, stat->get_height(), this->tkey(key_dict));
+}
+
+Handles *BTreeIndex::_lookup(BTreeNode *node, uint height, const KeyValue *key) const {
+    Handles *handles = new Handles;
+
+    if (height == 1) {
+        auto *leaf = dynamic_cast<BTreeLeaf *>(node);
+        handles->push_back(leaf->BTreeLeaf::find_eq(key));
+        return handles;
+    } else {
+        auto *interior = dynamic_cast<BTreeInterior *>(node);
+		auto *found = interior->find(key, height);
+		Handles *handles2 = _lookup(found, height -1, key);
+		delete found;
+        return handles2;
+    }
+
 }
 
 Handles *BTreeIndex::range(ValueDict *min_key, ValueDict *max_key) const {
